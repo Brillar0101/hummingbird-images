@@ -1,0 +1,26 @@
+---
+main_package: zig
+repository: zig
+# endoflife.date: Zig follows sequential releases (0.13, 0.14, ...); no parallel LTS branches
+stream: "latest"
+support_level: community
+application_category: "Programming Languages & Runtimes"
+summary: "Zig programming language compiler and toolchain"
+description: >-
+  Provides the Zig compiler and build system. Zig is a systems programming
+  language designed for performance, safety, and ease of use. Suitable for
+  compiling Zig applications in multi-stage container builds.
+url: "https://ziglang.org"
+user: root
+tags:
+  - value: latest
+  - value: '{{ package_major_version("zig") }}'
+    label: io.hummingbird-project.major-version
+  - value: '{{ package_version("zig") }}'
+    label: org.opencontainers.image.version
+rpm_packages:
+  all:
+    - coreutils-single
+    - zig
+  builder:
+    - gdb
