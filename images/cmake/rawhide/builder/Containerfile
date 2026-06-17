@@ -1,0 +1,53 @@
+ARG MAIN_PACKAGES="cmake coreutils-single gcc gcc-c++ glibc-devel make ninja-build"
+ARG BUILDER_PACKAGES="bash dnf5 shadow-utils gdb"
+
+ARG NEWROOT=/new-root-fs
+ARG DNF_CACHE=/tmp/dnf-cache
+ARG DNF_FLAGS="-y \
+      --use-host-config \
+      --nodocs \
+      --setopt=install_weak_deps=False \
+      --setopt=cachedir=${DNF_CACHE} \
+      --setopt=system_cachedir=${DNF_CACHE} \
+      --setopt=logdir=${DNF_CACHE}"
+
+FROM registry.fedoraproject.org/fedora:rawhide AS builder
+ARG NEWROOT
+ARG DNF_CACHE
+ARG DNF_FLAGS
+ARG MAIN_PACKAGES
+ARG BUILDER_PACKAGES
+
+RUN mkdir -p ${NEWROOT} ${DNF_CACHE}
+
+RUN dnf --installroot=${NEWROOT} ${DNF_FLAGS} install filesystem
+RUN dnf --installroot=${NEWROOT} ${DNF_FLAGS} install ${MAIN_PACKAGES} ${BUILDER_PACKAGES}
+
+RUN rm -rf \
+      ${NEWROOT}/usr/share/licenses \
+      ${NEWROOT}/usr/share/locale \
+      ${NEWROOT}/var/cache/* \
+      ${NEWROOT}/etc/machine-id \
+      ${NEWROOT}/etc/{group,gshadow,passwd,shadow}-
+
+FROM scratch
+ARG NEWROOT
+COPY --from=builder ${NEWROOT} /
+
+LABEL name="hummingbird/cmake"
+LABEL summary="CMake build system with GCC toolchain"
+LABEL description="Provides CMake, the GNU Compiler Collection (GCC) with C and C++ support, GNU Make, Ninja, and the GNU C Library headers. Suitable for configuring and building C and C++ projects in multi-stage container builds."
+LABEL url="https://cmake.org"
+LABEL maintainer="Project Hummingbird / Red Hat"
+LABEL vendor="Red Hat, Inc."
+LABEL io.hummingbird-project.repository="cmake"
+LABEL io.hummingbird-project.stream="latest"
+LABEL io.hummingbird-project.application-category="Build Tools"
+LABEL io.hummingbird-project.variant="builder"
+LABEL io.hummingbird-project.variant.description="Builder image with package manager and debugging tools"
+
+ENV CMAKE_VERSION=""
+
+CMD ["bash"]
+
+USER root
