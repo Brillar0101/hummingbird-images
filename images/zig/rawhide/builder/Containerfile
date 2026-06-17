@@ -1,0 +1,53 @@
+ARG MAIN_PACKAGES="coreutils-single zig"
+ARG BUILDER_PACKAGES="bash dnf5 shadow-utils gdb"
+
+ARG NEWROOT=/new-root-fs
+ARG DNF_CACHE=/tmp/dnf-cache
+ARG DNF_FLAGS="-y \
+      --use-host-config \
+      --nodocs \
+      --setopt=install_weak_deps=False \
+      --setopt=cachedir=${DNF_CACHE} \
+      --setopt=system_cachedir=${DNF_CACHE} \
+      --setopt=logdir=${DNF_CACHE}"
+
+FROM registry.fedoraproject.org/fedora:rawhide AS builder
+ARG NEWROOT
+ARG DNF_CACHE
+ARG DNF_FLAGS
+ARG MAIN_PACKAGES
+ARG BUILDER_PACKAGES
+
+RUN mkdir -p ${NEWROOT} ${DNF_CACHE}
+
+RUN dnf --installroot=${NEWROOT} ${DNF_FLAGS} install filesystem
+RUN dnf --installroot=${NEWROOT} ${DNF_FLAGS} install ${MAIN_PACKAGES} ${BUILDER_PACKAGES}
+
+RUN rm -rf \
+      ${NEWROOT}/usr/share/licenses \
+      ${NEWROOT}/usr/share/locale \
+      ${NEWROOT}/var/cache/* \
+      ${NEWROOT}/etc/machine-id \
+      ${NEWROOT}/etc/{group,gshadow,passwd,shadow}-
+
+FROM scratch
+ARG NEWROOT
+COPY --from=builder ${NEWROOT} /
+
+LABEL name="hummingbird/zig"
+LABEL summary="Zig programming language compiler and toolchain"
+LABEL description="Provides the Zig compiler and build system. Zig is a systems programming language designed for performance, safety, and ease of use. Suitable for compiling Zig applications in multi-stage container builds."
+LABEL url="https://ziglang.org"
+LABEL maintainer="Project Hummingbird / Red Hat"
+LABEL vendor="Red Hat, Inc."
+LABEL io.hummingbird-project.repository="zig"
+LABEL io.hummingbird-project.stream="latest"
+LABEL io.hummingbird-project.application-category="Programming Languages & Runtimes"
+LABEL io.hummingbird-project.variant="builder"
+LABEL io.hummingbird-project.variant.description="Builder image with package manager and debugging tools"
+
+ENV ZIG=zig
+
+CMD ["bash"]
+
+USER root
