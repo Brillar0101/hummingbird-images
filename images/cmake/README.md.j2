@@ -1,0 +1,46 @@
+{{ readme_heading() }}
+
+{{ readme_description() }}
+
+{{ readme_available_tags(variants, tags) }}
+
+## Usage
+
+The default variant includes `cmake`, `gcc`, `g++`, `make`, `ninja`, and the GNU C Library development headers. The `-builder` variants additionally include `gdb`.
+
+### Using a Multi-stage Build
+
+For production-ready images, use a multi-stage build. Configure and build with CMake in the build stage, then copy the resulting binary to a minimal runtime image.
+
+```dockerfile
+# Build stage
+FROM {{ readme_targets[target].registry }}/cmake:latest AS builder
+WORKDIR /app
+COPY . .
+RUN cmake -B build -G Ninja && cmake --build build
+
+# Runtime stage
+FROM {{ readme_targets[target].registry }}/core-runtime:latest
+COPY --from=builder /app/build/myapp /usr/bin/myapp
+ENTRYPOINT ["/usr/bin/myapp"]
+```
+
+### Using Builder Variants
+
+The `-builder` variants include the `dnf` package manager and additional tools such as `gdb`. Use these variants if the application requires additional packages or debugging tools during the build stage.
+
+```dockerfile
+# Build stage
+FROM {{ readme_targets[target].registry }}/cmake:latest-builder AS builder
+RUN dnf install -y <packages> && dnf clean all
+WORKDIR /app
+COPY . .
+RUN cmake -B build && cmake --build build
+
+# Runtime stage
+FROM {{ readme_targets[target].registry }}/core-runtime:latest
+COPY --from=builder /app/build/myapp /usr/bin/myapp
+ENTRYPOINT ["/usr/bin/myapp"]
+```
+
+{{ readme_trailing_sections() }}
