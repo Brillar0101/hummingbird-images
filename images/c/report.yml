@@ -1,0 +1,6 @@
+compare:
+  - pull: docker.io/gcc:latest
+    url: https://hub.docker.com/_/gcc
+
+  - pull: cgr.dev/chainguard/gcc-glibc
+    url: https://images.chainguard.dev/directory/image/gcc-glibc/overview
