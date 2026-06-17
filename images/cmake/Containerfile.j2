@@ -1,0 +1,10 @@
+{{ setup_newroot() }}
+{{ install_newroot() }}
+{{ cleanup_newroot() }}
+
+{{ final_stage() }}
+
+ENV CMAKE_VERSION={{ package_version('cmake') }}
+
+CMD ["bash"]
+{{ set_user() }}
