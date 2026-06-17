@@ -1,0 +1,6 @@
+compare:
+  - pull: docker.io/cmake:latest
+    url: https://hub.docker.com/_/cmake
+
+  - pull: cgr.dev/chainguard/cmake
+    url: https://images.chainguard.dev/directory/image/cmake/overview
