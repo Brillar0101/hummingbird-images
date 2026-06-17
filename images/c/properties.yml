@@ -1,0 +1,30 @@
+---
+main_package: gcc
+repository: c
+# endoflife.date: GCC follows yearly major releases (GCC 14, 15, ...); no parallel LTS branches
+stream: "latest"
+support_level: community
+application_category: "Programming Languages & Runtimes"
+summary: "C/C++ development toolchain based on GCC"
+description: >-
+  Provides the GNU Compiler Collection (GCC) with C and C++ support, GNU Make,
+  and the GNU C Library headers. Suitable for compiling C and C++ applications
+  in multi-stage container builds.
+url: "https://gcc.gnu.org"
+user: root
+tags:
+  - value: latest
+  - value: '{{ package_major_version("gcc") }}'
+    label: io.hummingbird-project.major-version
+  - value: '{{ package_version("gcc") }}'
+    label: org.opencontainers.image.version
+rpm_packages:
+  all:
+    - binutils
+    - coreutils-single
+    - gcc
+    - gcc-c++
+    - glibc-devel
+    - make
+  builder:
+    - gdb
