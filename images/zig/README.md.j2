@@ -1,0 +1,46 @@
+{{ readme_heading() }}
+
+{{ readme_description() }}
+
+{{ readme_available_tags(variants, tags) }}
+
+## Usage
+
+The default variant includes the Zig compiler and build system. The `-builder` variants additionally include `gdb`, `dnf`, and `bash`.
+
+### Using a Multi-stage Build
+
+For production-ready images, use a multi-stage build. Compile in the Zig image and copy the resulting binary to a minimal runtime image.
+
+```dockerfile
+# Build stage
+FROM {{ readme_targets[target].registry }}/zig:latest AS builder
+WORKDIR /app
+COPY . .
+RUN zig build-exe -OReleaseSafe src/main.zig
+
+# Runtime stage
+FROM {{ readme_targets[target].registry }}/core-runtime:latest
+COPY --from=builder /app/main /usr/bin/myapp
+ENTRYPOINT ["/usr/bin/myapp"]
+```
+
+### Using Builder Variants
+
+The `-builder` variants include the `dnf` package manager and additional tools such as `gdb`. Use these variants if the application requires additional packages or debugging tools during the build stage.
+
+```dockerfile
+# Build stage
+FROM {{ readme_targets[target].registry }}/zig:latest-builder AS builder
+RUN dnf install -y <packages> && dnf clean all
+WORKDIR /app
+COPY . .
+RUN zig build-exe -OReleaseSafe src/main.zig
+
+# Runtime stage
+FROM {{ readme_targets[target].registry }}/core-runtime:latest
+COPY --from=builder /app/main /usr/bin/myapp
+ENTRYPOINT ["/usr/bin/myapp"]
+```
+
+{{ readme_trailing_sections() }}
