@@ -1,0 +1,31 @@
+---
+main_package: cmake
+repository: cmake
+# endoflife.date: CMake follows sequential releases (3.x); no parallel LTS branches
+stream: "latest"
+support_level: community
+application_category: "Build Tools"
+summary: "CMake build system with GCC toolchain"
+description: >-
+  Provides CMake, the GNU Compiler Collection (GCC) with C and C++ support,
+  GNU Make, Ninja, and the GNU C Library headers. Suitable for configuring
+  and building C and C++ projects in multi-stage container builds.
+url: "https://cmake.org"
+user: root
+tags:
+  - value: latest
+  - value: '{{ package_major_version("cmake") }}'
+    label: io.hummingbird-project.major-version
+  - value: '{{ package_version("cmake") }}'
+    label: org.opencontainers.image.version
+rpm_packages:
+  all:
+    - cmake
+    - coreutils-single
+    - gcc
+    - gcc-c++
+    - glibc-devel
+    - make
+    - ninja-build
+  builder:
+    - gdb
