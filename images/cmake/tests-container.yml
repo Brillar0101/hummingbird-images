@@ -1,0 +1,106 @@
+---
+version:
+  command: |
+    version=$(< "${TEST_DISTRO:?}/${TEST_VARIANT:?}/VERSION")
+    expected="cmake version ${version}"
+    result=$(test_engine_run --rm "${TEST_IMAGE:?}" cmake --version)
+    grep "${expected}" <<< "${result}" || test_fail "Expected '${expected}', got '${result}'"
+
+smoke:
+  command: |
+    out=$(test_engine_run --rm "${TEST_IMAGE:?}" cmake --help)
+    grep -q 'Usage' <<< "${out}" || test_fail "Unexpected cmake --help output: ${out}"
+
+    out=$(test_engine_run --rm "${TEST_IMAGE:?}" make --version)
+    grep -q 'GNU Make' <<< "${out}" || test_fail "Unexpected make --version output: ${out}"
+
+    out=$(test_engine_run --rm "${TEST_IMAGE:?}" gcc --version)
+    grep -q 'GCC' <<< "${out}" || test_fail "Unexpected gcc --version output: ${out}"
+
+    out=$(test_engine_run --rm "${TEST_IMAGE:?}" ninja --version)
+    [[ -n "${out}" ]] || test_fail "Unexpected ninja --version output: ${out}"
+
+smoke-builder:
+  filters:
+    variants: [builder]
+  command: |
+    out=$(test_engine_run --rm "${TEST_IMAGE:?}" bash -c 'gdb --help')
+    grep -q 'This is the GNU debugger' <<< "${out}" || test_fail "Unexpected gdb --help output: ${out}"
+
+build-cmake:
+  command: |
+    TMPDIR=$(mktemp -d)
+    chmod 777 "${TMPDIR}"
+    trap 'podman unshare rm -rf "${TMPDIR}" 2>/dev/null || rm -rf "${TMPDIR}" 2>/dev/null || true' EXIT
+
+    cat <<EOF > "${TMPDIR}"/hello.c
+    #include <stdio.h>
+    int main(void) {
+        printf("Hello, CMake!\n");
+        return 0;
+    }
+    EOF
+
+    cat <<'CMAKE' > "${TMPDIR}"/CMakeLists.txt
+    cmake_minimum_required(VERSION 3.20)
+    project(hello C)
+    add_executable(hello hello.c)
+    CMAKE
+
+    test_engine_run --rm -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake -B build
+    test_engine_run --rm -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake --build build
+
+    out=$(test_engine_run --rm -v "${TMPDIR}":/app:ro,z -w /app "${TEST_IMAGES[core-runtime/default]:?}" ./build/hello)
+    [[ "${out}" == "Hello, CMake!" ]] || test_fail "Unexpected output from hello program, got: ${out}"
+
+build-cmake-ninja:
+  command: |
+    TMPDIR=$(mktemp -d)
+    chmod 777 "${TMPDIR}"
+    trap 'podman unshare rm -rf "${TMPDIR}" 2>/dev/null || rm -rf "${TMPDIR}" 2>/dev/null || true' EXIT
+
+    cat <<EOF > "${TMPDIR}"/hello.c
+    #include <stdio.h>
+    int main(void) {
+        printf("Hello, Ninja!\n");
+        return 0;
+    }
+    EOF
+
+    cat <<'CMAKE' > "${TMPDIR}"/CMakeLists.txt
+    cmake_minimum_required(VERSION 3.20)
+    project(hello C)
+    add_executable(hello hello.c)
+    CMAKE
+
+    test_engine_run --rm -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake -G Ninja -B build
+    test_engine_run --rm -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake --build build
+
+    out=$(test_engine_run --rm -v "${TMPDIR}":/app:ro,z -w /app "${TEST_IMAGES[core-runtime/default]:?}" ./build/hello)
+    [[ "${out}" == "Hello, Ninja!" ]] || test_fail "Unexpected output from hello program, got: ${out}"
+
+build-unprivileged:
+  command: |
+    TMPDIR=$(mktemp -d)
+    chmod 777 "${TMPDIR}"
+    trap 'podman unshare rm -rf "${TMPDIR}" 2>/dev/null || rm -rf "${TMPDIR}" 2>/dev/null || true' EXIT
+
+    cat <<EOF > "${TMPDIR}"/hello.c
+    #include <stdio.h>
+    int main(void) {
+        printf("Hello, World!\n");
+        return 0;
+    }
+    EOF
+
+    cat <<'CMAKE' > "${TMPDIR}"/CMakeLists.txt
+    cmake_minimum_required(VERSION 3.20)
+    project(hello C)
+    add_executable(hello hello.c)
+    CMAKE
+
+    test_engine_run --rm --user 65532 -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake -B build
+    test_engine_run --rm --user 65532 -v "${TMPDIR}":/src:z -w /src "${TEST_IMAGE:?}" cmake --build build
+
+    out=$(test_engine_run --rm -v "${TMPDIR}":/app:ro,z -w /app "${TEST_IMAGES[core-runtime/default]:?}" ./build/hello)
+    [[ "${out}" == "Hello, World!" ]] || test_fail "Unexpected output from hello program, got: ${out}"
