@@ -1,0 +1,12 @@
+{{ setup_newroot() }}
+{{ install_newroot() }}
+{{ cleanup_newroot() }}
+
+{{ final_stage() }}
+
+ENV CC=gcc \
+    CXX=g++ \
+    GCC_VERSION={{ package_version('gcc') }}
+
+CMD ["bash"]
+{{ set_user() }}
